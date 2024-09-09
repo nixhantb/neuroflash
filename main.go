@@ -29,6 +29,22 @@ func main() {
 		fmt.Println()
 	}
 
+	nullFlags, err := parser.IsNull()
+	if err != nil {
+		log.Fatal("Error finding null flags:", err)
+	}
+
+	// Print the nullFlags matrix
+	fmt.Println("Null Flags Matrix:")
+	for i := range nullFlags {
+		for j := range nullFlags[i] {
+			fmt.Printf("%v ", nullFlags[i][j])
+		}
+		fmt.Println()
+	}
+
 	elapsed := time.Since(start)
+
 	fmt.Printf("Time taken: %.6f seconds\n", elapsed.Seconds())
+
 }

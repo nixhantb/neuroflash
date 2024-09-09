@@ -212,5 +212,3 @@ func calculateStatistics(values []float64) Statistics {
 		Q3:           q3,
 	}
 }
-
-// 25, 50, 75

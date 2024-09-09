@@ -45,3 +45,31 @@ func (nf *NullFlags) Sum() int {
 	}
 	return count
 }
+
+func (p *CSVParser) FillMissing(defaultValue string) ([][]string, error) {
+
+	records, err := p.ParseCSV()
+
+	if err != nil {
+		return nil, err
+	}
+
+	nullFlags, err := p.IsNull()
+
+	if err != nil {
+		return nil, err
+	}
+
+	for i := 1; i < len(records); i++ {
+
+		for j := 1; i < len(records[i]); j++ {
+
+			if nullFlags.flags[i][j] {
+				records[i][j] = defaultValue
+			}
+		}
+	}
+
+	return records, nil
+
+}

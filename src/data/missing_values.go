@@ -1,6 +1,10 @@
 package csvparser
 
-func (p *CSVParser) IsNull() ([][]bool, error) {
+type NullFlags struct {
+	flags [][]bool
+}
+
+func (p *CSVParser) IsNull() (*NullFlags, error) {
 
 	records, err := p.ParseCSV()
 	if err != nil {
@@ -25,6 +29,19 @@ func (p *CSVParser) IsNull() ([][]bool, error) {
 		}
 	}
 
-	return nullFlags, nil
+	return &NullFlags{flags: nullFlags}, nil
 
+}
+
+func (nf *NullFlags) Sum() int {
+	count := 0
+
+	for i := range nf.flags {
+		for j := range nf.flags[i] {
+			if nf.flags[i][j] {
+				count++
+			}
+		}
+	}
+	return count
 }

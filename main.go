@@ -30,18 +30,12 @@ func main() {
 	}
 
 	nullFlags, err := parser.IsNull()
+
 	if err != nil {
 		log.Fatal("Error finding null flags:", err)
 	}
-
-	// Print the nullFlags matrix
-	fmt.Println("Null Flags Matrix:")
-	for i := range nullFlags {
-		for j := range nullFlags[i] {
-			fmt.Printf("%v ", nullFlags[i][j])
-		}
-		fmt.Println()
-	}
+	nullCount := nullFlags.Sum()
+	fmt.Printf("Number of null values: %d\n", nullCount)
 
 	elapsed := time.Since(start)
 

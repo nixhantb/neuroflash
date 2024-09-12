@@ -73,3 +73,67 @@ func (p *CSVParser) FillMissing(defaultValue string) ([][]string, error) {
 	return records, nil
 
 }
+
+func (p *CSVParser) DeleteNull(axis string) ([][]string, error) {
+
+	records, err := p.ParseCSV()
+
+	if len(records) == 0 {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	filteredRecords := [][]string{}
+	if axis == "row" {
+
+		for i := 0; i < len(records); i++ {
+
+			nonEmptyRow := []string{}
+			for j := 0; j < len(records[i]); j++ {
+
+				if records[i][j] != "" {
+					nonEmptyRow = append(nonEmptyRow, records[i][j])
+				}
+			}
+			if len(nonEmptyRow) > 0 {
+				filteredRecords = append(filteredRecords, nonEmptyRow)
+			}
+		}
+	}
+
+	if axis == "column" {
+		if len(records) == 0 {
+			return nil, nil
+		}
+
+		numColumns := len(records[0])
+
+		for i := 0; i < len(records); i++ {
+			filteredRecords = append(filteredRecords, []string{})
+		}
+
+		for j := 0; j < numColumns; j++ {
+
+			nonEmptyColumn := false
+
+			for i := 0; i < len(records); i++ {
+
+				if records[i][j] != "" {
+					nonEmptyColumn = true
+					break
+				}
+			}
+			if nonEmptyColumn {
+
+				for i := 0; i < len(records); i++ {
+					filteredRecords[i] = append(filteredRecords[i], records[i][j])
+				}
+			}
+		}
+	}
+
+	return filteredRecords, nil
+
+}

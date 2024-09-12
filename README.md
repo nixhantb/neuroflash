@@ -60,3 +60,10 @@ Number of null values: 0
 Time taken: 0.000511 seconds
 ```
 
+### Contributing
+
+Contributions are welcome! If you have suggestions or find issues, please submit a pull request or create an issue on our GitHub repository.
+
+### License
+
+This project is licensed under the MIT License 

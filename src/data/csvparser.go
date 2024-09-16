@@ -12,6 +12,7 @@ import (
 
 type CSVParser struct {
 	Filepath string
+	Data     [][]string
 }
 
 type Statistics struct {
@@ -28,13 +29,13 @@ type Statistics struct {
 	Q3           float64
 }
 
-func (p *CSVParser) ParseCSV() ([][]string, error) {
+func (p *CSVParser) ParseCSV() error {
 
 	file, err := os.Open(p.Filepath)
 
 	if err != nil {
 		log.Fatal("Unable to read the csv file "+p.Filepath, err)
-		return nil, err
+		return err
 	}
 
 	defer file.Close()
@@ -44,23 +45,17 @@ func (p *CSVParser) ParseCSV() ([][]string, error) {
 
 	if err != nil {
 		log.Fatal("Unable to parse the csv file "+p.Filepath, err)
-		return nil, err
+		return err
 	}
 
-	return records, nil
+	p.Data = records
+	return nil
 }
 
-func (p *CSVParser) Top(rows ...int) ([][]string, error) {
+func (p *CSVParser) Top(rows ...int) *CSVParser {
 
-	records, err := p.ParseCSV()
-
-	if err != nil {
-		log.Fatal("Unable to load the csv file", err)
-		return nil, err
-	}
-
-	if len(records) == 0 {
-		return nil, nil
+	if len(p.Data) == 0 {
+		return p
 	}
 
 	numOfRows := 5
@@ -69,60 +64,39 @@ func (p *CSVParser) Top(rows ...int) ([][]string, error) {
 		numOfRows = rows[0]
 	}
 
-	if numOfRows > len(records) {
-		numOfRows = len(records)
+	if numOfRows > len(p.Data) {
+		numOfRows = len(p.Data)
 	}
 
-	responseHead := records[:numOfRows+1]
+	p.Data = p.Data[:numOfRows+1]
 
-	return responseHead, nil
+	return p
 
 }
 
-func (p *CSVParser) Bottom(rows ...int) ([][]string, error) {
-
-	records, err := p.ParseCSV()
-	if err != nil {
-		log.Fatal("Unable to load the csv file ", err)
-		return nil, err
+func (p *CSVParser) Bottom(rows ...int) *CSVParser {
+	if len(p.Data) == 0 {
+		return p
 	}
 
-	if len(records) == 0 {
-		return nil, nil
-	}
-
-	header := records[0]
-
-	numsOfRows := 5
-
+	numOfRows := 5
 	if len(rows) > 0 {
-		numsOfRows = rows[0]
+		numOfRows = rows[0]
 	}
-
-	if numsOfRows > len(records) {
-		numsOfRows = len(records)
+	if numOfRows > len(p.Data) {
+		numOfRows = len(p.Data)
 	}
-
-	responseBottom := records[len(records)-numsOfRows:]
-
-	result := [][]string{header}
-	result = append(result, responseBottom...)
-	return result, nil
+	p.Data = append([][]string{p.Data[0]}, p.Data[len(p.Data)-numOfRows:]...)
+	return p
 }
 
 func (p *CSVParser) Describe() ([][]string, error) {
 
-	records, err := p.ParseCSV()
-
-	if err != nil {
-		return nil, err
-	}
-
-	if len(records) < 2 {
+	if len(p.Data) < 2 {
 		return nil, errors.New(`insufficient csv record`)
 	}
 
-	headers := records[0]
+	headers := p.Data[0]
 
 	response := [][]string{
 		{"Column", "Count", "Sum", "Mean", "Min", "Max", "Q1(25%)", "Q2(50%)", "Q3(75%)", "Variance", "Std Deviation"},
@@ -132,9 +106,9 @@ func (p *CSVParser) Describe() ([][]string, error) {
 
 		var values []float64
 
-		for i := 1; i < len(records); i++ {
+		for i := 1; i < len(p.Data); i++ {
 
-			value, err := strconv.ParseFloat(records[i][colIndex], 64)
+			value, err := strconv.ParseFloat(p.Data[i][colIndex], 64)
 
 			if err == nil {
 				values = append(values, value)

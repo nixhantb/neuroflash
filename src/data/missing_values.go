@@ -1,46 +1,37 @@
 package csvparser
 
-import "errors"
+import (
+	"errors"
+)
 
 type NullFlags struct {
-	flags [][]bool
+	Flags [][]bool
 }
 
 func (p *CSVParser) IsNull() (*NullFlags, error) {
-
-	records, err := p.ParseCSV()
-	if err != nil {
-		return nil, err
+	if len(p.Data) == 0 {
+		return nil, errors.New("No records to process")
 	}
-
-	nullFlags := make([][]bool, len(records))
+	nullFlags := make([][]bool, len(p.Data))
 
 	for i := range nullFlags {
-		nullFlags[i] = make([]bool, len(records[i]))
+		nullFlags[i] = make([]bool, len(p.Data[i]))
 	}
 
-	for i := 1; i < len(records); i++ {
-
-		for j := 1; j < len(records[0]); j++ {
-
-			if records[i][j] == "" {
-				nullFlags[i][j] = true
-			} else {
-				nullFlags[i][j] = false
-			}
+	for i := 1; i < len(p.Data); i++ {
+		for j := 1; j < len(p.Data[0]); j++ {
+			nullFlags[i][j] = p.Data[i][j] == ""
 		}
 	}
-
-	return &NullFlags{flags: nullFlags}, nil
+	return &NullFlags{Flags: nullFlags}, nil
 
 }
 
 func (nf *NullFlags) Sum() int {
 	count := 0
-
-	for i := range nf.flags {
-		for j := range nf.flags[i] {
-			if nf.flags[i][j] {
+	for i := range nf.Flags {
+		for j := range nf.Flags[i] {
+			if nf.Flags[i][j] {
 				count++
 			}
 		}
@@ -48,53 +39,28 @@ func (nf *NullFlags) Sum() int {
 	return count
 }
 
-func (p *CSVParser) FillMissing(defaultValue string) ([][]string, error) {
-
-	records, err := p.ParseCSV()
-
-	if err != nil {
-		return nil, err
-	}
-
-	nullFlags, err := p.IsNull()
-
-	if err != nil {
-		return nil, err
-	}
+func (p *CSVParser) FillMissing(defaultValue string) [][]string {
+	records := p.Data
 
 	for i := 1; i < len(records); i++ {
-
-		for j := 1; i < len(records[i]); j++ {
-
-			if nullFlags.flags[i][j] {
+		for j := 1; j < len(records[i]); j++ {
+			if records[i][j] == "" {
 				records[i][j] = defaultValue
 			}
 		}
 	}
 
-	return records, nil
-
+	return records
 }
 
-func (p *CSVParser) DeleteNull(axis string) ([][]string, error) {
-
-	records, err := p.ParseCSV()
-
-	if len(records) == 0 {
-		return nil, nil
-	}
-	if err != nil {
-		return nil, err
-	}
+func (p *CSVParser) DeleteNull(axis string) [][]string {
+	records := p.Data
 
 	filteredRecords := [][]string{}
 	if axis == "row" {
-
 		for i := 0; i < len(records); i++ {
-
 			nonEmptyRow := []string{}
 			for j := 0; j < len(records[i]); j++ {
-
 				if records[i][j] != "" {
 					nonEmptyRow = append(nonEmptyRow, records[i][j])
 				}
@@ -107,7 +73,7 @@ func (p *CSVParser) DeleteNull(axis string) ([][]string, error) {
 
 	if axis == "column" {
 		if len(records) == 0 {
-			return nil, nil
+			return nil
 		}
 
 		numColumns := len(records[0])
@@ -117,18 +83,15 @@ func (p *CSVParser) DeleteNull(axis string) ([][]string, error) {
 		}
 
 		for j := 0; j < numColumns; j++ {
-
 			nonEmptyColumn := false
 
 			for i := 0; i < len(records); i++ {
-
 				if records[i][j] != "" {
 					nonEmptyColumn = true
 					break
 				}
 			}
 			if nonEmptyColumn {
-
 				for i := 0; i < len(records); i++ {
 					filteredRecords[i] = append(filteredRecords[i], records[i][j])
 				}
@@ -136,47 +99,41 @@ func (p *CSVParser) DeleteNull(axis string) ([][]string, error) {
 		}
 	}
 
-	return filteredRecords, nil
-
+	return filteredRecords
 }
 
-func (p *CSVParser) DropCol(colsToDrop []string) ([][]string, error) {
-
-	records, err := p.ParseCSV()
-	if err != nil {
-		return nil, err
+func (p *CSVParser) DropCol(colsToDrop []string) *CSVParser {
+	if len(p.Data) == 0 {
+		return p
 	}
 
-	if len(records) == 0 {
-		return nil, errors.New("No records found")
-	}
-
-	header := records[0]
+	header := p.Data[0]
 	dropIndices := map[int]bool{}
 
 	for _, col := range colsToDrop {
-		for idx, headerCol := range header {
-
-			if col == headerCol {
-				dropIndices[idx] = true
+		for i, h := range header {
+			if h == col {
+				dropIndices[i] = true
+				break
 			}
 		}
 	}
 
-	filteredRecords := [][]string{}
+	if len(dropIndices) == 0 {
+		return p
+	}
 
-	for _, record := range records {
-
-		newRecord := []string{}
-
-		for idx, value := range record {
-
-			if !dropIndices[idx] {
-				newRecord = append(newRecord, value)
-
+	newData := make([][]string, len(p.Data))
+	for i, row := range p.Data {
+		newRow := []string{}
+		for j, cell := range row {
+			if !dropIndices[j] {
+				newRow = append(newRow, cell)
 			}
 		}
-		filteredRecords = append(filteredRecords, newRecord)
+		newData[i] = newRow
 	}
-	return filteredRecords, nil
+
+	p.Data = newData
+	return p
 }

@@ -1,5 +1,7 @@
 package csvparser
 
+import "errors"
+
 type NullFlags struct {
 	flags [][]bool
 }
@@ -136,4 +138,45 @@ func (p *CSVParser) DeleteNull(axis string) ([][]string, error) {
 
 	return filteredRecords, nil
 
+}
+
+func (p *CSVParser) DropCol(colsToDrop []string) ([][]string, error) {
+
+	records, err := p.ParseCSV()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(records) == 0 {
+		return nil, errors.New("No records found")
+	}
+
+	header := records[0]
+	dropIndices := map[int]bool{}
+
+	for _, col := range colsToDrop {
+		for idx, headerCol := range header {
+
+			if col == headerCol {
+				dropIndices[idx] = true
+			}
+		}
+	}
+
+	filteredRecords := [][]string{}
+
+	for _, record := range records {
+
+		newRecord := []string{}
+
+		for idx, value := range record {
+
+			if !dropIndices[idx] {
+				newRecord = append(newRecord, value)
+
+			}
+		}
+		filteredRecords = append(filteredRecords, newRecord)
+	}
+	return filteredRecords, nil
 }
